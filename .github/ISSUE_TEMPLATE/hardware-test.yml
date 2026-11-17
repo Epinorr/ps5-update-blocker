@@ -1,0 +1,51 @@
+name: Hardware test result
+description: Report observed console behavior for an experimental build
+title: "[Hardware test] Firmware / result"
+body:
+  - type: markdown
+    attributes:
+      value: "Attach pre/post logs. File persistence and actual updater blocking are separate observations. Do not start a live firmware installation for this form."
+  - type: input
+    id: build
+    attributes:
+      label: Build / ELF SHA-256
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Exact firmware and console model family
+    validations:
+      required: true
+  - type: textarea
+    id: loader
+    attributes:
+      label: ELF loader, Payload Manager, HEN versions and load order
+    validations:
+      required: true
+  - type: textarea
+    id: results
+    attributes:
+      label: Status, Disable and Enable results / codes / mount type
+    validations:
+      required: true
+  - type: textarea
+    id: persistence
+    attributes:
+      label: Cold boot, restart, rest/resume, storage repair observations
+      description: State whether Disable was excluded from every autoload list and was not rerun after boot.
+    validations:
+      required: true
+  - type: textarea
+    id: network
+    attributes:
+      label: Network conditions and actual updater evidence
+      description: Distinguish a network block/timeout from evidence that the filesystem blocker stopped the downloader.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Separate before/after logs
+    validations:
+      required: true

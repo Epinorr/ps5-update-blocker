@@ -1,0 +1,66 @@
+name: Build PS5 payloads
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test and build experimental ELFs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out project
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang-18 lld-18 llvm-18-dev make gcc libc6-dev python3 git ca-certificates
+
+      - name: Test actual filesystem operations with sanitizers
+        run: make test
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+
+      - name: Build pinned SDK and all three payloads
+        run: bash scripts/build.sh
+
+      - name: Record successful build
+        shell: bash
+        run: |
+          {
+            echo '### Experimental PS5 Update Blocker'
+            echo ''
+            echo 'Artifact contains Status.elf, Disable-Updates.elf and Enable-Updates.elf.'
+            echo 'Native ELF build and host checks passed. Console behavior and reboot persistence remain unverified.'
+            echo ''
+            echo 'Download the artifact below this run and read docs/TESTING.fa.md or docs/TESTING.md.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload console test bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ps5-update-blocker-experimental-${{ github.run_number }}
+          path: dist/PS5-Update-Blocker-v0.1.0-experimental.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload test/build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: diagnostic-files-${{ github.run_number }}
+          path: build/test-results.json
+          if-no-files-found: ignore
